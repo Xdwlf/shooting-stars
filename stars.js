@@ -58,13 +58,13 @@ class Star extends Object{
       y:7
     }
     this.beam = {
-      start: ticker + this.radius*randomInt(-3, 5),
+      start: ticker + this.radius*randomInt(-3, 3),
       end: ticker + this.radius*randomInt(8, 12),
       head: {
         x: null,
         y: null
       },
-      maxlength: randomInt(80, 150)
+      maxlength: this.radius * randomInt(30, 50)
     }
     this.start = {
       x: null,
@@ -329,10 +329,10 @@ function animate(){
 
   if(ticker % randomIncrement === 0){
     var randomSize = randomInt(1,5);
-    let star = new Star(randomInt(0, canvas.width), 0, randomSize, "rgba(250, 250, 250, 0.8)");
+    let star = new Star(randomInt(-20, canvas.width), 0, randomSize, "rgba(250, 250, 250, 0.8)");
     star.create();
     stars.push(star);
-    randomIncrement = randomInt(50, 90)
+    randomIncrement = randomInt(20, 90)
   }
 
   stars.forEach(function(star, index){
@@ -344,10 +344,10 @@ function animate(){
   createMountainRange(3, canvas.height*3/4- 50, mountainGradient3)
 
   if(ticker % randomIncrement2 ===0){
-    let frontStar = new FrontStar(randomInt(0, canvas.width-600), 10, randomInt(13, 25), "white");
+    let frontStar = new FrontStar(randomInt(0, canvas.width-600), 10, randomInt(15, 25), "white");
     frontStar.create();
     frontStars.push(frontStar)
-    randomIncrement2 = randomInt(200, 300)
+    randomIncrement2 = randomInt(150, 300)
   }
 
   frontStars.forEach(function(frontStar, index){
