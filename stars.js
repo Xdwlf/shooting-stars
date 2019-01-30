@@ -11,6 +11,11 @@ var groundHeight = 100;
 
 c.fillRect(window.innerWidth/2, window.innerHeight/2, 310 , 30) // x position, y position, width and height
 
+var stars = [];
+var frontStars = [];
+var shatterParticles = [];
+
+
 
 const backgroundGradient = c.createLinearGradient(0, 0, 0, canvas.height)
 backgroundGradient.addColorStop(0, "#0B486B")
@@ -36,35 +41,6 @@ const groundGradient = c.createLinearGradient(0, canvas.height - 150, 0, canvas.
 groundGradient.addColorStop(0, "#040813")
 groundGradient.addColorStop(1, "#03030D")
 
-
-
-// class Logo{
-//   constructor(text, fontStyle, fontSize, color, xPos, yPos){
-//     this.text = text;
-//     this.fontStyle = fontStyle;
-//     this.fontSize = fontSize;
-//     this.color = color;
-//     this.x = xPos;
-//     this.y = yPos;
-//   }
-//   create(){
-//     c.fillStyle = fontGradient;
-//     c.font = `bold ${this.fontSize}px Tahoma`;
-//     c.textBaseline = "middle";
-//     c.textAlign = "center";
-//     c.fillText(this.text, this.x, this.y);
-//   }
-//   update(){
-//     this.create();
-//     var dx = 2;
-//     var dy = 2;
-//     if(this.y > 110){
-//       this.y -= dy;
-//       this.fontSize += 0.5;
-//     }
-//   }
-// }
-
 class Object{
   constructor(x, y, radius, color){
     this.x = x;
@@ -84,47 +60,78 @@ class Star extends Object{
     this.beam = {
       start: ticker + this.radius*randomInt(-3, 5),
       end: ticker + this.radius*randomInt(8, 12),
-      opacity: 1
+      head: {
+        x: null,
+        y: null
+      },
+      maxlength: randomInt(80, 150)
     }
     this.start = {
+      x: null,
+      y: null
+    }
+    this.end = {
       x: null,
       y: null
     }
     this.started = false;
     this.faded = false;
   }
+
+  draw(){
+    c.beginPath();
+    c.arc(this.x, this.y, this.radius, 0 , Math.PI * 2, false)
+    c.fillStyle = this.color;
+    c.fill();
+    c.closePath();
+  }
+
   create(){
     if(ticker > this.beam.start && ticker < this.beam.end){
       if(this.started === false){
         this.start.x = this.x;
         this.start.y = this.y;
+        this.beam.head.x = this.x;
+        this.beam.head.y = this.y;
         this.started = true;
       }
-      this.createBeam();
-      c.beginPath();
-      c.arc(this.x, this.y, this.radius, 0 , Math.PI * 2, false)
-      c.fillStyle = this.color;
-      c.fill();
-      c.closePath();
+      if(findDistance(this.start.x, this.start.y, this.x, this.y) > this.beam.maxlength){
+        this.shrinkBeam(this.beam.head.x, this.beam.head.y, this.x, this.y);
+      } else{
+        this.createBeam(this.start.x, this.start.y, this.x, this.y);
+        this.draw();
+      }
+    }
+    if(ticker === this.beam.end){
+      this.end.x = this.x;
+      this.end.y = this.y;
+    } else if(ticker> this.beam.end && this.faded === false){
+      this.shrinkBeam(this.beam.head.x, this.beam.head.y, this.end.x, this.end.y);
     }
   }
+
   update(){
     this.create();
     this.x += this.velocity.x;
     this.y += this.velocity.y;
   }
 
-  createBeam(){
-    c.globalAlpha = this.beam.opacity;
-    this.beam.opacity -= 0.02;
-    const starBeamGradient = c.createLinearGradient(this.start.x, this.start.y, this.x, this.y);
+  createBeam(x1, y1, x2, y2){
+    const starBeamGradient = c.createLinearGradient(...arguments);
     starBeamGradient.addColorStop(0, "rgba(250, 250, 250, 0.1)")
     starBeamGradient.addColorStop(1, "rgba(250, 250, 250, 1)")
-    var beam = new Beam(this.start.x, this.start.y, this.x, this.y, this.radius, starBeamGradient)
+    var beam = new Beam(...arguments, this.radius, starBeamGradient)
     beam.create();
-    c.globalAlpha = 1;
   }
 
+  shrinkBeam(x1, y1, x2, y2){
+    this.createBeam(x1, y1, x2, y2);
+    this.beam.head.x += this.velocity.x;
+    this.beam.head.y += this.velocity.y;
+    if(this.end.x && this.beam.head.x >= this.end.x){
+      this.faded = true;
+    }
+  }
 }
 
 class Beam{
@@ -267,13 +274,7 @@ class Mountain{
 }
 
 
-var text = "The Outpost";
-// var logo = new Logo(text , "Comic Sans", 30, "blue", window.innerWidth/2, window.innerHeight/2)
-var stars = [];
-var frontStars = [];
-var shatterParticles = [];
-
-
+//Utility Functions
 function randomInt(minInt, maxInt){
   return Math.floor(randomNum(minInt, maxInt));
 }
@@ -284,6 +285,18 @@ function randomNum(minNum, maxNum){
   var r = (Math.random() - 0.5)* difference;
   return mid + r;
 }
+
+function findSlope(x1, y1, x2, y2){
+    return (y2 - y1)/(x2 - x1);
+}
+
+function findDistance(x1, y1, x2, y2){
+    let a = Math.abs(x2 - x1);
+    let b = Math.abs(y2 - y1);
+    return Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+}
+
+
 
 function createMountainRange(mountainAmount, maxHeight, color){
   for(let i = 0; i< mountainAmount; i++){
@@ -319,14 +332,12 @@ function animate(){
     let star = new Star(randomInt(0, canvas.width), 0, randomSize, "rgba(250, 250, 250, 0.8)");
     star.create();
     stars.push(star);
-    randomIncrement = randomInt(30, 60)
+    randomIncrement = randomInt(50, 90)
   }
 
   stars.forEach(function(star, index){
     star.update()
   })
-
-  // logo.update();
 
   createMountainRange(1, canvas.height*3/4, mountainGradient)
   createMountainRange(2, canvas.height*3/4- 20, mountainGradient2)
@@ -352,7 +363,6 @@ function animate(){
   stars = stars.filter( star => star.faded === false)
   frontStars = frontStars.filter( star => star.radius >= 5)
   shatterParticles = shatterParticles.filter( particle => particle.lifespan > 0)
-
   ticker ++;
 }
 
